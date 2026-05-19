@@ -264,6 +264,4 @@ R process communicate normally.
 
 ## Related
 
-- [loopmonitor (Python)](https://github.com/haimbar/IPC) — the companion Python
-  package and the source of the `ipc` CLI tool
 - [PyPI: loopmonitor](https://pypi.org/project/loopmonitor/)
