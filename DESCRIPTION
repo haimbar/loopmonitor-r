@@ -1,0 +1,16 @@
+Package: loopmonitor
+Title: On-Demand Status Queries and Loop Control for Long-Running R Programs
+Version: 0.1.0
+Authors@R: person("Haim", "Bar", email = "haim.bar@uconn.edu",
+    role = c("aut", "cre"))
+Description: Provides ipc_for(), ipc_while(), and ipc_repeat() as drop-in
+    replacements for R's loop constructs, enabling on-demand inspection and
+    control of long-running loops from a second terminal using the ipc
+    command-line tool (from the companion Python package).  Status, tracked
+    values, and ETA are written to a JSON state file after every iteration;
+    commands (peek, plot, continue, break, set, checkpoint, stack, memory)
+    are delivered via a polled command file without requiring signal handlers.
+License: MIT + file LICENSE
+Imports: jsonlite
+Encoding: UTF-8
+RoxygenNote: 7.3.1
