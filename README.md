@@ -76,15 +76,19 @@ devtools::install("loopmonitor-r")
 
 The examples below are fully self-contained: `make_loss()` is a stand-in for
 any real per-iteration computation (model training, simulation step, etc.).
-Replace it with your own work; the `ipc_*` wrapper and `ipc_track()` calls stay
-the same.
+It includes a `Sys.sleep(0.5)` so the loop stays alive long enough for you to
+run `ipc list` / `ipc peek` from a second terminal — remove the sleep and
+replace the body with your actual work.
 
 ```r
 library(loopmonitor)
 
-# Synthetic loss that decays with noise — replace with your actual computation.
+# Stand-in for any real per-iteration computation.
+# The Sys.sleep() simulates work that takes time — remove it and replace
+# the body with your actual model step, solver iteration, etc.
 make_loss <- function(i, total, noise = 0.05) {
-  base <- exp(-3 * (i - 1) / total)   # decays from 1 → ~0.05
+  Sys.sleep(0.5)                             # ← replace with real work
+  base <- exp(-3 * (i - 1) / total)         # synthetic decaying loss
   max(0, base + rnorm(1, sd = noise))
 }
 
@@ -111,7 +115,7 @@ ipc continue <pid>
 Drop-in for `for`.  `break` and `next` work as expected.
 
 ```r
-# make_loss() defined above — replace with your real computation
+# make_loss() defined in Quick start — includes Sys.sleep() to simulate work
 ipc_for(i, 1:1000, {
   loss <- make_loss(i, 1000)
   ipc_track(loss = loss)
@@ -128,6 +132,7 @@ Drop-in for `while`.  The condition is re-evaluated in the caller's
 environment each iteration.
 
 ```r
+# make_loss() includes Sys.sleep() — see Quick start
 i    <- 0L
 loss <- Inf
 ipc_while(loss > 0.01, {
@@ -143,6 +148,7 @@ Drop-in for `repeat`.  Use `break` in the body to exit, or send
 `ipc continue` from the terminal.
 
 ```r
+# make_loss() includes Sys.sleep() — see Quick start
 i <- 0L
 ipc_repeat({
   i    <- i + 1L
@@ -174,8 +180,9 @@ Read a value injected by `ipc set`.  Use this to pick up hyperparameter
 changes mid-run:
 
 ```r
-# Toy loss that depends on a learning-rate parameter
+# Toy loss that depends on a learning-rate parameter (includes Sys.sleep)
 make_loss_lr <- function(i, total, lr) {
+  Sys.sleep(0.5)                                    # ← replace with real work
   base <- exp(-3 * lr * 100 * (i - 1) / total)
   max(0, base + rnorm(1, sd = 0.05))
 }
