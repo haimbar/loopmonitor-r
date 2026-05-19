@@ -74,14 +74,23 @@ devtools::install("loopmonitor-r")
 
 ## Quick start
 
-Replace ordinary loops with the `ipc_*` equivalents:
+The examples below are fully self-contained: `make_loss()` is a stand-in for
+any real per-iteration computation (model training, simulation step, etc.).
+Replace it with your own work; the `ipc_*` wrapper and `ipc_track()` calls stay
+the same.
 
 ```r
 library(loopmonitor)
 
+# Synthetic loss that decays with noise — replace with your actual computation.
+make_loss <- function(i, total, noise = 0.05) {
+  base <- exp(-3 * (i - 1) / total)   # decays from 1 → ~0.05
+  max(0, base + rnorm(1, sd = noise))
+}
+
 ipc_for(epoch, 1:100, {
-  loss <- train_one_epoch(epoch)
-  ipc_track(loss = loss, lr = current_lr())
+  loss <- make_loss(epoch, 100)
+  ipc_track(loss = loss)
 }, label = "training")
 ```
 
@@ -89,8 +98,7 @@ From another terminal:
 
 ```bash
 ipc list              # find the PID
-ipc peek <pid>        # current iteration, loss, lr, ETA
-ipc set  <pid> lr=1e-4
+ipc peek <pid>        # current iteration, loss, ETA
 ipc continue <pid>
 ```
 
@@ -103,10 +111,11 @@ ipc continue <pid>
 Drop-in for `for`.  `break` and `next` work as expected.
 
 ```r
+# make_loss() defined above — replace with your real computation
 ipc_for(i, 1:1000, {
-  loss <- train_step(i)
+  loss <- make_loss(i, 1000)
   ipc_track(loss = loss)
-  if (loss < 1e-4) break
+  if (loss < 0.01) break
 }, label = "training", state_every = 10L)
 ```
 
@@ -119,9 +128,11 @@ Drop-in for `while`.  The condition is re-evaluated in the caller's
 environment each iteration.
 
 ```r
+i    <- 0L
 loss <- Inf
-ipc_while(loss > 1e-4, {
-  loss <- train_step()
+ipc_while(loss > 0.01, {
+  i    <- i + 1L
+  loss <- make_loss(i, 200)
   ipc_track(loss = loss)
 }, label = "training")
 ```
@@ -132,10 +143,12 @@ Drop-in for `repeat`.  Use `break` in the body to exit, or send
 `ipc continue` from the terminal.
 
 ```r
+i <- 0L
 ipc_repeat({
-  loss <- train_step()
+  i    <- i + 1L
+  loss <- make_loss(i, 200)
   ipc_track(loss = loss)
-  if (loss < 1e-4) break
+  if (loss < 0.01) break
 }, label = "training")
 ```
 
@@ -161,9 +174,15 @@ Read a value injected by `ipc set`.  Use this to pick up hyperparameter
 changes mid-run:
 
 ```r
+# Toy loss that depends on a learning-rate parameter
+make_loss_lr <- function(i, total, lr) {
+  base <- exp(-3 * lr * 100 * (i - 1) / total)
+  max(0, base + rnorm(1, sd = 0.05))
+}
+
 ipc_for(i, 1:1000, {
-  lr <- ipc_get("lr", default = 0.01)   # updated live by: ipc set <pid> lr=1e-4
-  loss <- train_step(lr = lr)
+  lr   <- ipc_get("lr", default = 0.01)   # updated live: ipc set <pid> lr=1e-4
+  loss <- make_loss_lr(i, 1000, lr)
   ipc_track(loss = loss, lr = lr)
 }, label = "training")
 ```

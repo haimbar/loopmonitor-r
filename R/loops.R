@@ -104,9 +104,13 @@
 #' \dontrun{
 #' library(loopmonitor)
 #'
+#' # Stand-in for any real per-iteration computation (model step, simulation, …)
+#' make_loss <- function(i, n) max(0, exp(-3*(i-1)/n) + rnorm(1, sd=0.05))
+#'
 #' ipc_for(i, 1:1000, {
-#'   loss <- train_step(i)
+#'   loss <- make_loss(i, 1000)
 #'   ipc_track(loss = loss)
+#'   if (loss < 0.01) break
 #' }, label = "training")
 #' }
 ipc_for <- function(var, iter, body, label = "", state_every = 1L) {
@@ -161,9 +165,12 @@ ipc_for <- function(var, iter, body, label = "", state_every = 1L) {
 #'
 #' @examples
 #' \dontrun{
-#' loss <- Inf
-#' ipc_while(loss > 1e-4, {
-#'   loss <- train_step()
+#' make_loss <- function(i, n) max(0, exp(-3*(i-1)/n) + rnorm(1, sd=0.05))
+#'
+#' i <- 0L; loss <- Inf
+#' ipc_while(loss > 0.01, {
+#'   i    <- i + 1L
+#'   loss <- make_loss(i, 200)
 #'   ipc_track(loss = loss)
 #' }, label = "training")
 #' }
@@ -211,10 +218,14 @@ ipc_while <- function(condition, body, label = "", state_every = 1L) {
 #'
 #' @examples
 #' \dontrun{
+#' make_loss <- function(i, n) max(0, exp(-3*(i-1)/n) + rnorm(1, sd=0.05))
+#'
+#' i <- 0L
 #' ipc_repeat({
-#'   loss <- train_step()
+#'   i    <- i + 1L
+#'   loss <- make_loss(i, 200)
 #'   ipc_track(loss = loss)
-#'   if (loss < 1e-4) break
+#'   if (loss < 0.01) break
 #' }, label = "training")
 #' }
 ipc_repeat <- function(body, label = "", state_every = 1L) {
