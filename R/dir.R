@@ -1,7 +1,10 @@
 # Path helpers — mirrors loopmonitor/loopmonitor/_dir.py
 
 .ipc_dir <- function() {
-  custom <- Sys.getenv("LOOPMONITOR_DIR", unset = "")
+  # Mirror the Python package: honour LOOPCTL_DIR first (shared override),
+  # fall back to LOOPMONITOR_DIR (R-only legacy), then ~/.ipc.
+  custom <- Sys.getenv("LOOPCTL_DIR", unset = "")
+  if (!nzchar(custom)) custom <- Sys.getenv("LOOPMONITOR_DIR", unset = "")
   d <- if (nzchar(custom)) custom else file.path(Sys.getenv("HOME"), ".ipc")
   if (!dir.exists(d)) {
     dir.create(d, recursive = TRUE)
